@@ -18,5 +18,14 @@
   },
   "bin": {
     "github-secrets": "bin/github-secrets.js"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neilbmclaughlin/github-secrets.git"
+  },
+  "bugs": {
+    "url": "https://github.com/neilbmclaughlin/github-secrets/issues"
+  },
+  "homepage": "https://github.com/neilbmclaughlin/github-secrets#readme"
 }
