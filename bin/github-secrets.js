@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
+const chalk = require('chalk')
 const readline = require('readline')
 const sodium = require('tweetsodium')
 const { Octokit } = require('@octokit/core')
@@ -31,8 +32,8 @@ const argv = yargs
     builder,
     (argv) => {
       putSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log('put successful'))
-        .catch((err) => console.log(`put failed (${err.message})`))
+        .then(() => console.log(chalk.green('put successful')))
+        .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.message)})`))
     }
   )
   .command(
@@ -40,8 +41,8 @@ const argv = yargs
     builder,
     (argv) => {
       deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log('delete successful'))
-        .catch((err) => console.log(`delete failed (${err.message})`))
+        .then(() => console.log(chalk.green('delete successful')))
+        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.message)})`))
     }
   )
   .argv
@@ -88,17 +89,14 @@ async function checkSecretsSupported (accessToken, owner, repository) {
   if (!repository) {
     const { data: { type } } = await githubRequest(accessToken, '/users/{owner}', { owner })
     if (type === 'User') {
-      console.log(`${owner} is a user and a repository has not been specified.\nSecrets can only be stored for repositorys and organisations. `)
-      return false
+      throw Error(`${owner} is a user and a repository has not been specified. Secrets can only be stored for repositorys and organisations.`)
     }
   }
-  return true
 }
 
 async function putSecrets (accessToken, filename, owner, repository) {
-  if (!await checkSecretsSupported(accessToken, owner, repository)) {
-    return
-  }
+  await checkSecretsSupported(accessToken, owner, repository)
+
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
   const fileStream = fs.createReadStream(filename)
 
@@ -124,9 +122,7 @@ async function putSecrets (accessToken, filename, owner, repository) {
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
-  if (!await checkSecretsSupported(accessToken, owner, repository)) {
-    return
-  }
+  await checkSecretsSupported(accessToken, owner, repository)
 
   const fileStream = fs.createReadStream(filename)
   const rl = readline.createInterface({
