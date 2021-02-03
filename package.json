@@ -1,6 +1,6 @@
 {
   "name": "@neilbmclaughlin/github-secrets",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "manage git repository secrets",
   "scripts": {
     "lint": "standard"
