@@ -29,12 +29,20 @@ const argv = yargs
   .command(
     'put [option] <filename>', 'upsert repository secrets from a file',
     builder,
-    (argv) => { putSecrets(argv.a, argv.filename, argv.o, argv.r) }
+    (argv) => {
+      putSecrets(argv.a, argv.filename, argv.o, argv.r)
+        .then(() => console.log('put successful'))
+        .catch((err) => console.log(`put failed (${err.message})`))
+    }
   )
   .command(
     'delete [option] <filename>', 'delete repository secrets from a file list',
     builder,
-    (argv) => { deleteSecrets(argv.a, argv.filename, argv.o, argv.r) }
+    (argv) => {
+      deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
+        .then(() => console.log('delete successful'))
+        .catch((err) => console.log(`delete failed (${err.message})`))
+    }
   )
   .argv
 
