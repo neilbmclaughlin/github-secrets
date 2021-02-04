@@ -32,7 +32,7 @@ const argv = yargs
     builder,
     (argv) => {
       putSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log(chalk.green('put successful')))
+        .then(() => console.log(chalk.green('put complete')))
         .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.message)})`))
     }
   )
@@ -41,8 +41,8 @@ const argv = yargs
     builder,
     (argv) => {
       deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log(chalk.green('delete successful')))
-        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.message)})`))
+        .then(() => console.log(chalk.green('delete complete')))
+        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended.message)})`))
     }
   )
   .argv
@@ -74,7 +74,10 @@ async function githubRequest (accessToken, restCmd, options) {
     // console.log({ restCmd, options })
     return await octokit.request(restCmd, options)
   } catch (err) {
-    throw Error(`githubRequest failed (status ${err.status}): ${restCmd} ${JSON.stringify(options)}`)
+    err.extended = {
+      message: `githubRequest failed (status ${err.status}): ${restCmd} ${JSON.stringify(options)}`
+    }
+    throw err
   }
 }
 
@@ -90,6 +93,19 @@ async function checkSecretsSupported (accessToken, owner, repository) {
     const { data: { type } } = await githubRequest(accessToken, '/users/{owner}', { owner })
     if (type === 'User') {
       throw Error(`${owner} is a user and a repository has not been specified. Secrets can only be stored for repositorys and organisations.`)
+    }
+  }
+}
+
+async function actionSecret (accessToken, restCmd, verb, options, key) {
+  try {
+    await githubRequest(accessToken, restCmd, options)
+    console.log(`${verb} secret ${key}`)
+  } catch (err) {
+    if (err.status && err.status === 404) {
+      console.log(`secret ${key} does not exist`)
+    } else {
+      throw err
     }
   }
 }
@@ -111,13 +127,13 @@ async function putSecrets (accessToken, filename, owner, repository) {
   for await (const line of rl) {
     const [key, value] = line.split('=')
     const restCmd = `PUT ${path}/{secret_name}`
-    const parameters = {
+    const options = {
       secret_name: key,
       encrypted_value: encrypt(publicKey, value),
       key_id: publicKeyId,
       ...pathParameters
     }
-    await githubRequest(accessToken, restCmd, parameters)
+    await actionSecret(accessToken, restCmd, 'added', options, key)
   }
 }
 
@@ -140,6 +156,6 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
       secret_name: key,
       ...pathParameters
     }
-    await githubRequest(accessToken, restCmd, options)
+    await actionSecret(accessToken, restCmd, 'deleted', options, key)
   }
 }
