@@ -25,10 +25,11 @@ const builder = {
     describe: 'Github repository'
   }
 }
+const envVarMsg = 'Note: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
 
 const argv = yargs
   .command(
-    'put [option] <filename>', 'upsert repository secrets from a file',
+    'put [option] <filename>', `upsert repository secrets from a file\n\n${envVarMsg}`,
     builder,
     (argv) => {
       putSecrets(argv.a, argv.filename, argv.o, argv.r)
@@ -37,7 +38,7 @@ const argv = yargs
     }
   )
   .command(
-    'delete [option] <filename>', 'delete repository secrets from a file list',
+    'delete [option] <filename>', `delete repository secrets from a file list\n\n${envVarMsg}`,
     builder,
     (argv) => {
       deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
@@ -45,6 +46,7 @@ const argv = yargs
         .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended.message)})`))
     }
   )
+  .env('GITHUB_SECRETS')
   .argv
 
 function encrypt (publicKey, value) {
