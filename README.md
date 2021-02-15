@@ -33,3 +33,4 @@ Options:
 ## Example
 
 `github-secrets put -a {access token} -o neilbmclaughlin -r github-secrets test-data/test-env`
+`github-secrets delete -a {access token} -o neilbmclaughlin -r github-secrets test-data/test-env`
