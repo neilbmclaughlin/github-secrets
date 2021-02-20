@@ -3,19 +3,34 @@
   "version": "0.0.7",
   "description": "manage git repository secrets",
   "scripts": {
-    "lint": "standard"
+    "lint": "standard",
+    "test": "mocha test/unit"
   },
   "author": "Neil McLaughlin",
   "license": "MIT",
   "dependencies": {
     "@octokit/core": "^3.2.4",
+    "chai": "^4.3.0",
     "chalk": "^4.1.0",
+    "mocha": "^8.3.0",
     "readline": "^1.3.0",
     "tweetsodium": "0.0.5",
     "yargs": "^16.2.0"
   },
   "devDependencies": {
     "standard": "^16.0.3"
+  },
+  "standard": {
+    "globals": [
+      "describe",
+      "beforeEach",
+      "expect",
+      "test",
+      "afterEach",
+      "beforeAll",
+      "afterAll",
+      "it"
+    ]
   },
   "bin": {
     "github-secrets": "bin/github-secrets.js"

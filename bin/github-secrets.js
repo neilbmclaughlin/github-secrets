@@ -6,6 +6,7 @@ const readline = require('readline')
 const sodium = require('tweetsodium')
 const { Octokit } = require('@octokit/core')
 const yargs = require('yargs/yargs')(process.argv.slice(2))
+const { getSecretsPath, getAdditionalOptions } = require('./lib/secrets')
 const builder = {
   a: {
     demandOption: true,
@@ -63,12 +64,6 @@ function encrypt (publicKey, value) {
   return encrypted
 }
 
-function getSecretsPath (owner, repository) {
-  const [path, parameters] = repository
-    ? ['/repos/{owner}/{repository}/actions/secrets', { owner, repository }]
-    : ['/orgs/{owner}/actions/secrets', { owner, visibility: 'all' }]
-  return { path, parameters }
-}
 
 async function githubRequest (accessToken, restCmd, options) {
   const octokit = new Octokit({ auth: accessToken })
@@ -105,8 +100,10 @@ async function actionSecret (accessToken, restCmd, verb, options, key) {
     console.log(`${verb} secret ${key}`)
   } catch (err) {
     if (err.status && err.status === 404) {
+      console.log({ accessToken, restCmd, options })
       console.log(`secret ${key} does not exist`)
     } else {
+      console.log({ accessToken, restCmd, options })
       throw err
     }
   }
@@ -126,6 +123,7 @@ async function putSecrets (accessToken, filename, owner, repository) {
   // ('\r\n') in input.txt as a single line break.
 
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
+  const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
   for await (const line of rl) {
     const [key, value] = line.split('=')
     const restCmd = `PUT ${path}/{secret_name}`
@@ -133,7 +131,8 @@ async function putSecrets (accessToken, filename, owner, repository) {
       secret_name: key,
       encrypted_value: encrypt(publicKey, value),
       key_id: publicKeyId,
-      ...pathParameters
+      ...pathParameters,
+      ...additionalOptions
     }
     await actionSecret(accessToken, restCmd, 'added', options, key)
   }
@@ -151,12 +150,15 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
   // ('\r\n') in input.txt as a single line break.
 
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
+  const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
+  delete pathParameters.visibility
   const restCmd = `DELETE ${path}/{secret_name}`
   for await (const line of rl) {
     const [key] = line.split('=')
     const options = {
       secret_name: key,
-      ...pathParameters
+      ...pathParameters,
+      ...additionalOptions
     }
     await actionSecret(accessToken, restCmd, 'deleted', options, key)
   }
