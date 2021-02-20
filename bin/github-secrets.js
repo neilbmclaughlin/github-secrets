@@ -100,10 +100,8 @@ async function actionSecret (accessToken, restCmd, verb, options, key) {
     console.log(`${verb} secret ${key}`)
   } catch (err) {
     if (err.status && err.status === 404) {
-      console.log({ accessToken, restCmd, options })
       console.log(`secret ${key} does not exist`)
     } else {
-      console.log({ accessToken, restCmd, options })
       throw err
     }
   }
