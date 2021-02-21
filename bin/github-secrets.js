@@ -28,7 +28,8 @@ const builder = {
 }
 const envVarMsg = 'Note: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
 
-const argv = yargs
+// eslint-disable-next-line no-unused-expressions
+yargs
   .command(
     'put [option] <filename>', `upsert repository secrets from a file\n\n${envVarMsg}`,
     builder,
@@ -63,7 +64,6 @@ function encrypt (publicKey, value) {
 
   return encrypted
 }
-
 
 async function githubRequest (accessToken, restCmd, options) {
   const octokit = new Octokit({ auth: accessToken })
