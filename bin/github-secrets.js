@@ -123,16 +123,18 @@ async function putSecrets (accessToken, filename, owner, repository) {
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
   for await (const line of rl) {
-    const [key, value] = line.split('=')
-    const restCmd = `PUT ${path}/{secret_name}`
-    const options = {
-      secret_name: key,
-      encrypted_value: encrypt(publicKey, value),
-      key_id: publicKeyId,
-      ...pathParameters,
-      ...additionalOptions
+    if (line.length > 0 && !line.match(/^[\s]*#/)) {
+      const [key, value] = line.split('=')
+      const restCmd = `PUT ${path}/{secret_name}`
+      const options = {
+        secret_name: key,
+        encrypted_value: encrypt(publicKey, value),
+        key_id: publicKeyId,
+        ...pathParameters,
+        ...additionalOptions
+      }
+      await actionSecret(accessToken, restCmd, 'added', options, key)
     }
-    await actionSecret(accessToken, restCmd, 'added', options, key)
   }
 }
 
@@ -152,12 +154,14 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
   delete pathParameters.visibility
   const restCmd = `DELETE ${path}/{secret_name}`
   for await (const line of rl) {
-    const [key] = line.split('=')
-    const options = {
-      secret_name: key,
-      ...pathParameters,
-      ...additionalOptions
+    if (line.length > 0 && !line.match(/^[\s]*#/)) {
+      const [key] = line.split('=')
+      const options = {
+        secret_name: key,
+        ...pathParameters,
+        ...additionalOptions
+      }
+      await actionSecret(accessToken, restCmd, 'deleted', options, key)
     }
-    await actionSecret(accessToken, restCmd, 'deleted', options, key)
   }
 }
