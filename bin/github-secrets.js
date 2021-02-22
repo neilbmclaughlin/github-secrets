@@ -26,12 +26,12 @@ const builder = {
     describe: 'Github repository'
   }
 }
-const envVarMsg = 'Note: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
+const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)\n2: Expected format for each input line is {key}={value}'
 
 // eslint-disable-next-line no-unused-expressions
 yargs
   .command(
-    'put [option] <filename>', `upsert repository secrets from a file\n\n${envVarMsg}`,
+    'put [option] [filename]', `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
     (argv) => {
       putSecrets(argv.a, argv.filename, argv.o, argv.r)
@@ -40,7 +40,7 @@ yargs
     }
   )
   .command(
-    'delete [option] <filename>', `delete repository secrets from a file list\n\n${envVarMsg}`,
+    'delete [option] [filename]', `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
     (argv) => {
       deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
@@ -107,22 +107,25 @@ async function actionSecret (accessToken, restCmd, verb, options, key) {
   }
 }
 
+function getStream (filename) {
+  const stream = filename ? fs.createReadStream(filename) : process.stdin
+  // Note: we use the crlfDelay option to recognize all instances of CR LF
+  // ('\r\n') in input.txt as a single line break.
+  const rl = readline.createInterface({
+    input: stream,
+    crlfDelay: Infinity
+  })
+  return rl
+}
+
 async function putSecrets (accessToken, filename, owner, repository) {
   await checkSecretsSupported(accessToken, owner, repository)
 
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
-  const fileStream = fs.createReadStream(filename)
-
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity
-  })
-  // Note: we use the crlfDelay option to recognize all instances of CR LF
-  // ('\r\n') in input.txt as a single line break.
-
+  const stream = getStream(filename)
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
-  for await (const line of rl) {
+  for await (const line of stream) {
     if (line.length > 0 && !line.match(/^[\s]*#/)) {
       const [key, value] = line.split('=')
       const restCmd = `PUT ${path}/{secret_name}`
@@ -141,19 +144,12 @@ async function putSecrets (accessToken, filename, owner, repository) {
 async function deleteSecrets (accessToken, filename, owner, repository) {
   await checkSecretsSupported(accessToken, owner, repository)
 
-  const fileStream = fs.createReadStream(filename)
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity
-  })
-  // Note: we use the crlfDelay option to recognize all instances of CR LF
-  // ('\r\n') in input.txt as a single line break.
-
+  const stream = getStream(filename)
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
   const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
   delete pathParameters.visibility
   const restCmd = `DELETE ${path}/{secret_name}`
-  for await (const line of rl) {
+  for await (const line of stream) {
     if (line.length > 0 && !line.match(/^[\s]*#/)) {
       const [key] = line.split('=')
       const options = {

@@ -2,12 +2,32 @@
 
 ## Usage
 
-github-secrets put [option] <filename>
+```
+github-secrets.js put [option] [filename]
 
-upsert repository secrets from a file
+upsert repository secrets from either a file or stdin
 
-Note: Options can also be specified in env vars prepended with 'GITHUB_SECRETS'
+Notes:
+1: Options can also be specified in env vars prepended with 'GITHUB_SECRETS'
 (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
+2: Expected format for each input line is {key}={value}
+
+Options:
+      --help          Show help                                        [boolean]
+      --version       Show version number                              [boolean]
+  -a, --access-token  Github personal access token                    [required]
+  -o, --owner         Github repository owner                         [required]
+```
+
+```
+github-secrets.js delete [option] [filename]
+
+delete repository secrets from either a file or stdin
+
+Notes:
+1: Options can also be specified in env vars prepended with 'GITHUB_SECRETS'
+(e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
+2: Expected format for each input line is {key}={value}
 
 Options:
       --help          Show help                                        [boolean]
@@ -15,22 +35,10 @@ Options:
   -a, --access-token  Github personal access token                    [required]
   -o, --owner         Github repository owner                         [required]
   -r, --repository    Github repository
+```
 
-github-secrets delete [option] <filename>
+## Examples
 
-delete repository secrets from a file list
-
-Note: Options can also be specified in env vars prepended with 'GITHUB_SECRETS'
-(e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
-
-Options:
-      --help          Show help                                        [boolean]
-      --version       Show version number                              [boolean]
-  -a, --access-token  Github personal access token                    [required]
-  -o, --owner         Github repository owner                         [required]
-  -r, --repository    Github repository
-
-## Example
-
-`github-secrets put -a {access token} -o neilbmclaughlin -r github-secrets test-data/test-env`
-`github-secrets delete -a {access token} -o neilbmclaughlin -r github-secrets test-data/test-env`
+`github-secrets put -a {access token} -o neilbmclaughlin -r github-secrets test/data/env`
+`github-secrets delete -a {access token} -o neilbmclaughlin -r github-secrets test/data/env`
+`cat test/data/env | github-secrets delete -a {access token} -o neilbmclaughlin -r github-secrets`
