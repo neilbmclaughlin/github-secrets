@@ -30,20 +30,23 @@ const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepende
 
 // eslint-disable-next-line no-unused-expressions
 yargs
+  .usage('$0 <cmd> [args]')
   .command(
-    'put [option] [filename]', `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
+    'put [filename]',
+    `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
     (argv) => {
-      putSecrets(argv.a, argv.option, argv.o, argv.r)
+      putSecrets(argv.a, argv.filename, argv.o, argv.r)
         .then(() => console.log(chalk.green('put complete')))
         .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
     }
   )
   .command(
-    'delete [option] [filename]', `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
+    'delete [filename]',
+    `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
     (argv) => {
-      deleteSecrets(argv.a, argv.option, argv.o, argv.r)
+      deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
         .then(() => console.log(chalk.green('delete complete')))
         .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
     }
