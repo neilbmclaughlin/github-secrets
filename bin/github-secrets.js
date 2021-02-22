@@ -38,7 +38,7 @@ yargs
     (argv) => {
       putSecrets(argv.a, argv.filename, argv.o, argv.r)
         .then(() => console.log(chalk.green('put complete')))
-        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
+        .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
     }
   )
   .command(
