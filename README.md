@@ -3,7 +3,7 @@
 ## Usage
 
 ```
-github-secrets.js put [option] [filename]
+github-secrets put [option] [filename]
 
 upsert repository secrets from either a file or stdin
 
@@ -17,10 +17,11 @@ Options:
       --version       Show version number                              [boolean]
   -a, --access-token  Github personal access token                    [required]
   -o, --owner         Github repository owner                         [required]
+  -r, --repository    Github repository
 ```
 
 ```
-github-secrets.js delete [option] [filename]
+github-secrets delete [option] [filename]
 
 delete repository secrets from either a file or stdin
 
@@ -40,5 +41,7 @@ Options:
 ## Examples
 
 `github-secrets put -a {access token} -o neilbmclaughlin -r github-secrets test/data/env`
+
 `github-secrets delete -a {access token} -o neilbmclaughlin -r github-secrets test/data/env`
+
 `cat test/data/env | github-secrets delete -a {access token} -o neilbmclaughlin -r github-secrets`
