@@ -34,18 +34,18 @@ yargs
     'put [option] [filename]', `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
     (argv) => {
-      putSecrets(argv.a, argv.filename, argv.o, argv.r)
+      putSecrets(argv.a, argv.option, argv.o, argv.r)
         .then(() => console.log(chalk.green('put complete')))
-        .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.message)})`))
+        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
     }
   )
   .command(
     'delete [option] [filename]', `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
     (argv) => {
-      deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
+      deleteSecrets(argv.a, argv.option, argv.o, argv.r)
         .then(() => console.log(chalk.green('delete complete')))
-        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended.message)})`))
+        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
     }
   )
   .env('GITHUB_SECRETS')
@@ -147,7 +147,6 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
   const stream = getStream(filename)
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
   const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
-  delete pathParameters.visibility
   const restCmd = `DELETE ${path}/{secret_name}`
   for await (const line of stream) {
     if (line.length > 0 && !line.match(/^[\s]*#/)) {
