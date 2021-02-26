@@ -113,37 +113,28 @@ async function actionSecret (accessToken, restCmd, verb, options, key) {
 }
 
 function getStream (filename) {
-  const stream = filename ? fs.createReadStream(filename) : process.stdin
-  // Note: we use the crlfDelay option to recognize all instances of CR LF
-  // ('\r\n') in input.txt as a single line break.
-  const rl = readline.createInterface({
-    input: stream,
-    crlfDelay: Infinity
-  })
-  return rl
+  return filename ? fs.createReadStream(filename) : process.stdin
 }
 
 async function putSecrets (accessToken, filename, owner, repository) {
   await checkSecretsSupported(accessToken, owner, repository)
-
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
-  const stream = getStream(filename)
+
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
+  const restCmd = `PUT ${path}/{secret_name}`
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
-  for await (const line of stream) {
-    if (line.length > 0 && !line.match(/^[\s]*#/)) {
-      const [key, value] = line.split('=')
-      const restCmd = `PUT ${path}/{secret_name}`
-      const options = {
-        secret_name: key,
-        encrypted_value: encrypt(publicKey, value),
-        key_id: publicKeyId,
-        ...pathParameters,
-        ...additionalOptions
-      }
-      await actionSecret(accessToken, restCmd, 'added', options, key)
+  const stream = getStream(filename)
+  runPipeline(stream, async l => {
+    const { key, value } = JSON.parse(l)
+    const options = {
+      secret_name: key,
+      encrypted_value: encrypt(publicKey, value),
+      key_id: publicKeyId,
+      ...pathParameters,
+      ...additionalOptions
     }
-  }
+    await actionSecret(accessToken, restCmd, 'added', options, key)
+  })
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
