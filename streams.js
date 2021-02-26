@@ -5,12 +5,14 @@ const path = require('path')
 const split = require('split')
 const { Writable, Transform, pipeline } = require('stream')
 
-function filterData (filter) {
+function filterData (inclusionFilter) {
   return Transform({
     objectMode: true,
     transform (chunk, encoding, next) {
       try {
-        const output = filter(chunk.toString()) ? `${chunk}` : undefined
+        const output = inclusionFilter(chunk.toString())
+          ? `${chunk}`
+          : undefined
         return next(null, output)
       } catch (e) {
         return next(e)
@@ -19,11 +21,11 @@ function filterData (filter) {
   })
 }
 
-function writeData (filter) {
+function writeData (process) {
   return Writable({
     write (chunk, encoding, next) {
       try {
-        console.log({ chunk: chunk.toString() })
+        process(chunk)
         return next()
       } catch (e) {
         return next(e)
@@ -39,9 +41,15 @@ const readStream = fs.createReadStream(path.resolve(READ_FILE_PATH))
 
 pipeline(
   readStream,
-  split(),
-  filterData(line => line && line.length > 0 && !line.match(/^[\s]*#/)),
-  writeData(),
+  split(line => {
+    const [key, value] = line.split('=')
+    return JSON.stringify({ key, value })
+  }),
+  filterData(l => {
+    const { key } = JSON.parse(l)
+    return key && key.length > 0 && !key.match(/^[\s]*#/)
+  }),
+  writeData(l => console.log({ line: JSON.parse(l) })),
   err => {
     if (err) {
       console.error('Pipeline failed.', err)
