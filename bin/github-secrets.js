@@ -7,6 +7,8 @@ const sodium = require('tweetsodium')
 const { Octokit } = require('@octokit/core')
 const yargs = require('yargs/yargs')(process.argv.slice(2))
 const { getSecretsPath, getAdditionalOptions } = require('./lib/secrets')
+const runPipeline = require('./lib/pipeline')
+
 const builder = {
   a: {
     demandOption: true,
@@ -147,19 +149,17 @@ async function putSecrets (accessToken, filename, owner, repository) {
 async function deleteSecrets (accessToken, filename, owner, repository) {
   await checkSecretsSupported(accessToken, owner, repository)
 
-  const stream = getStream(filename)
   const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
-  const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
   const restCmd = `DELETE ${path}/{secret_name}`
-  for await (const line of stream) {
-    if (line.length > 0 && !line.match(/^[\s]*#/)) {
-      const [key] = line.split('=')
-      const options = {
-        secret_name: key,
-        ...pathParameters,
-        ...additionalOptions
-      }
-      await actionSecret(accessToken, restCmd, 'deleted', options, key)
+  const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
+  const stream = getStream(filename)
+  runPipeline(stream, async l => {
+    const { key } = JSON.parse(l)
+    const options = {
+      secret_name: key,
+      ...pathParameters,
+      ...additionalOptions
     }
-  }
+    await actionSecret(accessToken, restCmd, 'deleted', options, key)
+  })
 }
