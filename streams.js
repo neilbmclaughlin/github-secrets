@@ -34,6 +34,14 @@ function writeData (process) {
   })
 }
 
+function reporter (err) {
+  if (err) {
+    console.error('Pipeline failed.', err)
+  } else {
+    console.log('Pipeline succeeded.')
+  }
+}
+
 const READ_FILE_PATH = 'test/data/env'
 
 const readStream = fs.createReadStream(path.resolve(READ_FILE_PATH))
@@ -50,11 +58,5 @@ pipeline(
     return key && key.length > 0 && !key.match(/^[\s]*#/)
   }),
   writeData(l => console.log({ line: JSON.parse(l) })),
-  err => {
-    if (err) {
-      console.error('Pipeline failed.', err)
-    } else {
-      console.log('Pipeline succeeded.')
-    }
-  }
+  reporter
 )
