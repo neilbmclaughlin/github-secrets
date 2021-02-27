@@ -29,15 +29,24 @@ const builder = {
 }
 const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)\n2: Expected format for each input line is {key}={value}'
 
+const putBuilder = {
+  s: {
+    alias: 'separator',
+    nargs: 1,
+    describe: 'key-value pair separator',
+    default: '='
+  },
+  ...builder
+}
 // eslint-disable-next-line no-unused-expressions
 yargs
   .usage('$0 <cmd> [args]')
   .command(
     'put [filename]',
     `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
-    builder,
+    putBuilder,
     (argv) => {
-      putSecrets(argv.a, argv.filename, argv.o, argv.r)
+      putSecrets(argv.a, argv.filename, argv.o, argv.r, argv.s)
         .then(() => console.log(chalk.green('put complete')))
         .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
     }
@@ -115,7 +124,7 @@ function getStream (filename) {
   return filename ? fs.createReadStream(filename) : process.stdin
 }
 
-async function putSecrets (accessToken, filename, owner, repository) {
+async function putSecrets (accessToken, filename, owner, repository, separator) {
   await checkSecretsSupported(accessToken, owner, repository)
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
 
@@ -124,7 +133,7 @@ async function putSecrets (accessToken, filename, owner, repository) {
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
   const stream = getStream(filename)
   const secretParser = line => {
-    const [key, value] = line.split('=')
+    const [key, value] = line.split(separator)
     return JSON.stringify({ key, value })
   }
   const secretPutter = async l => {
