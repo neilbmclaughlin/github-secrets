@@ -133,7 +133,11 @@ async function putSecrets (accessToken, filename, owner, repository, separator) 
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
   const stream = getStream(filename)
   const secretParser = line => {
-    const [key, value] = line.split(separator)
+    // use regex to ensure only the first occurence of the separator
+    // is used in the split. For example:
+    // 'foo=bar=boo=hoo' => [ 'foo', 'bar=boo=hoo' ] when separator is =
+    const regex = RegExp(`^([^${separator}]+)${separator}(.+)`)
+    const [, key, value] = line.split(regex)
     return JSON.stringify({ key, value })
   }
   const secretPutter = async l => {
