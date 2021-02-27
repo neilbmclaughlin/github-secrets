@@ -47,8 +47,7 @@ yargs
     putBuilder,
     (argv) => {
       putSecrets(argv.a, argv.filename, argv.o, argv.r, argv.s)
-        .then(() => console.log(chalk.green('put complete')))
-        .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
+        .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
   .command(
@@ -57,8 +56,7 @@ yargs
     builder,
     (argv) => {
       deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log(chalk.green('delete complete')))
-        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
+        .catch((err) => { console.log(err) })
     }
   )
   .env('GITHUB_SECRETS')
@@ -107,13 +105,13 @@ async function checkSecretsSupported (accessToken, owner, repository) {
   }
 }
 
-async function actionSecret (accessToken, restCmd, verb, options, key) {
+async function actionSecret (accessToken, restCmd, verb, options) {
   try {
     await githubRequest(accessToken, restCmd, options)
-    console.log(`${verb} secret ${key}`)
+    console.log(`${verb} secret ${options.secret_name}`)
   } catch (err) {
     if (err.status && err.status === 404) {
-      console.log(`secret ${key} does not exist`)
+      console.log(`ignored secret ${options.owner}/${options.repository}/${options.secret_name} (it does not exist)`)
     } else {
       throw err
     }
@@ -149,7 +147,7 @@ async function putSecrets (accessToken, filename, owner, repository, separator) 
       ...pathParameters,
       ...additionalOptions
     }
-    await actionSecret(accessToken, restCmd, 'added', options, key)
+    await actionSecret(accessToken, restCmd, 'added', options)
   }
   runPipeline(stream, secretParser, secretPutter)
 }
@@ -171,7 +169,7 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
       ...pathParameters,
       ...additionalOptions
     }
-    await actionSecret(accessToken, restCmd, 'deleted', options, key)
+    await actionSecret(accessToken, restCmd, 'deleted', options)
   }
   runPipeline(stream, secretParser, secretDeleter)
 }

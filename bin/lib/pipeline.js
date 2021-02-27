@@ -2,6 +2,7 @@
 
 // const fs = require('fs')
 // const path = require('path')
+const chalk = require('chalk')
 const split = require('split')
 const { Writable, Transform, pipeline } = require('stream')
 
@@ -36,9 +37,9 @@ function writeData (process) {
 
 function reporter (err) {
   if (err) {
-    console.error('Pipeline failed.', err)
+    console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`)
   } else {
-    // console.log('Pipeline succeeded.')
+    console.log(chalk.green('success'))
   }
 }
 
