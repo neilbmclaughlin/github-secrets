@@ -34,7 +34,7 @@ const putBuilder = {
     alias: 'separator',
     nargs: 1,
     describe: 'key-value pair separator',
-    default: '='
+    default: ' '
   },
   ...builder
 }
