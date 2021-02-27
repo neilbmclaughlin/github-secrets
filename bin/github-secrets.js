@@ -27,7 +27,7 @@ const builder = {
     describe: 'Github repository'
   }
 }
-const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)\n2: Expected format for each input line is {key}={value}'
+const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
 
 const putBuilder = {
   s: {
