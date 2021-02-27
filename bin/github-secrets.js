@@ -124,7 +124,11 @@ async function putSecrets (accessToken, filename, owner, repository) {
   const restCmd = `PUT ${path}/{secret_name}`
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
   const stream = getStream(filename)
-  runPipeline(stream, async l => {
+  const secretParser = line => {
+    const [key, value] = line.split('=')
+    return JSON.stringify({ key, value })
+  }
+  const secretPutter = async l => {
     const { key, value } = JSON.parse(l)
     const options = {
       secret_name: key,
@@ -134,7 +138,8 @@ async function putSecrets (accessToken, filename, owner, repository) {
       ...additionalOptions
     }
     await actionSecret(accessToken, restCmd, 'added', options, key)
-  })
+  }
+  runPipeline(stream, secretParser, secretPutter)
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
@@ -144,7 +149,10 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
   const restCmd = `DELETE ${path}/{secret_name}`
   const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
   const stream = getStream(filename)
-  runPipeline(stream, async l => {
+  const secretParser = l => {
+    return JSON.stringify({ key: l })
+  }
+  const secretDeleter = async l => {
     const { key } = JSON.parse(l)
     const options = {
       secret_name: key,
@@ -152,5 +160,6 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
       ...additionalOptions
     }
     await actionSecret(accessToken, restCmd, 'deleted', options, key)
-  })
+  }
+  runPipeline(stream, secretParser, secretDeleter)
 }
