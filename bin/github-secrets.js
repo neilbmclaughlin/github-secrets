@@ -2,7 +2,6 @@
 
 const fs = require('fs')
 const chalk = require('chalk')
-const readline = require('readline')
 const sodium = require('tweetsodium')
 const { Octokit } = require('@octokit/core')
 const yargs = require('yargs/yargs')(process.argv.slice(2))
