@@ -6,6 +6,9 @@
     "lint": "standard",
     "test": "mocha test/unit"
   },
+  "engines": {
+    "node": ">=10"
+  },
   "author": "Neil McLaughlin",
   "license": "MIT",
   "dependencies": {
