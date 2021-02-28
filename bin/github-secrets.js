@@ -164,14 +164,14 @@ async function putSecrets (accessToken, filename, owner, repository, separator) 
   }
   const secretPutter = async l => {
     const { name, value } = JSON.parse(l)
-    const secret = `${path}/${name}`
-    const restCmd = `PUT ${secret}`
+    const fullname = `${path}/${name}`
+    const restCmd = `PUT ${fullname}`
     const options = {
       encrypted_value: encrypt(publicKey, value),
       key_id: publicKeyId,
       ...additionalOptions
     }
-    await actionSecret(accessToken, restCmd, 'added', options, secret)
+    await actionSecret(accessToken, restCmd, 'added', options, fullname)
   }
   runPipeline(stream, secretParser, emptyLineFilter, secretPutter)
 }
@@ -188,13 +188,13 @@ async function deleteSecrets (accessToken, filename, owner, repository) {
   }
   const secretDeleter = async l => {
     const { name } = JSON.parse(l)
-    const secret = `${path}/${name}`
-    const restCmd = `DELETE ${secret}`
+    const fullname = `${path}/${name}`
+    const restCmd = `DELETE ${fullname}`
     try {
-      await actionSecret(accessToken, restCmd, 'deleted', options, secret)
+      await actionSecret(accessToken, restCmd, 'deleted', options, fullname)
     } catch (err) {
       if (err.status && err.status === 404) {
-        console.log(`secret ${path}/${name} not found`)
+        console.log(`secret ${fullname} not found`)
       } else {
         throw err
       }
