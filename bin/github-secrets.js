@@ -16,10 +16,9 @@ const builder = {
     describe: 'Github personal access token'
   },
   o: {
-    demandOption: true,
     alias: 'owner',
     nargs: 1,
-    describe: 'Github repository owner'
+    describe: 'Github repository owner (defaults to access token user)'
   },
   r: {
     alias: 'repository',
@@ -45,8 +44,9 @@ yargs
     'put [filename]',
     `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
     putBuilder,
-    (argv) => {
-      putSecrets(argv.a, argv.filename, argv.o, argv.r, argv.s)
+    async (argv) => {
+      const owner = await getOwner(argv.a, argv.o)
+      putSecrets(argv.a, argv.filename, owner, argv.r, argv.s)
         .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
@@ -54,13 +54,22 @@ yargs
     'delete [filename]',
     `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
     builder,
-    (argv) => {
-      deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
+    async (argv) => {
+      const owner = await getOwner(argv.a, argv.o)
+      deleteSecrets(argv.a, argv.filename, owner, argv.r)
         .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
   .env('GITHUB_SECRETS')
   .argv
+
+async function getOwner (accessToken, owner) {
+  if (owner) {
+    return owner
+  }
+  const { data } = await githubRequest(accessToken, 'GET /user')
+  return data.login
+}
 
 function encrypt (publicKey, value) {
   // Convert the message and key to Uint8Array's (Buffer implements that interface)
