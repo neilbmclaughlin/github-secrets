@@ -48,15 +48,11 @@ function reporter (err) {
 // const readStream = fs.createReadStream(path.resolve(READ_FILE_PATH))
 // const writeStream = process.stdout // Note: this needs to be a write to github secrets
 
-function doPipeline (readStream, parser, writer) {
+function doPipeline (readStream, parser, filter, writer) {
   pipeline(
     readStream,
     split(parser),
-    filterData(l => {
-      // filter out empty lines
-      const { key } = JSON.parse(l)
-      return key && key.length > 0
-    }),
+    filterData(filter),
     writeData(writer),
     reporter
   )

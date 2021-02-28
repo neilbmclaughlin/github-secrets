@@ -1,8 +1,7 @@
 function getSecretsPath (owner, repository) {
-  const [path, parameters] = repository
-    ? ['/repos/{owner}/{repository}/actions/secrets', { owner, repository }]
-    : ['/orgs/{owner}/actions/secrets', { owner }]
-  return { path, parameters }
+  return repository
+    ? `/repos/${owner}/${repository}/actions/secrets`
+    : `/orgs/${owner}/actions/secrets`
 }
 
 function getAdditionalOptions (owner, repository, action) {

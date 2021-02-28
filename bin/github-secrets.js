@@ -56,7 +56,7 @@ yargs
     builder,
     (argv) => {
       deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .catch((err) => { console.log(err) })
+        .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
   .env('GITHUB_SECRETS')
@@ -90,44 +90,59 @@ async function githubRequest (accessToken, restCmd, options) {
 }
 
 async function getPublicKey (accessToken, owner, repository) {
-  const { path, parameters } = getSecretsPath(owner, repository)
+  const path = getSecretsPath(owner, repository)
   const restCmd = `GET ${path}/public-key`
-  const response = await githubRequest(accessToken, restCmd, parameters)
+  const response = await githubRequest(accessToken, restCmd)
   return { publicKey: response.data.key, publicKeyId: response.data.key_id }
 }
 
 async function checkSecretsSupported (accessToken, owner, repository) {
   if (!repository) {
-    const { data: { type } } = await githubRequest(accessToken, '/users/{owner}', { owner })
+    const { data: { type } } = await githubRequest(accessToken, `/users/${owner}`)
     if (type === 'User') {
       throw Error(`${owner} is a user and a repository has not been specified. Secrets can only be stored for repositorys and organisations.`)
     }
   }
 }
 
-async function actionSecret (accessToken, restCmd, verb, options) {
-  try {
-    await githubRequest(accessToken, restCmd, options)
-    console.log(`${verb} secret ${options.secret_name}`)
-  } catch (err) {
-    if (err.status && err.status === 404) {
-      console.log(`ignored secret ${options.owner}/${options.repository}/${options.secret_name} (it does not exist)`)
-    } else {
-      throw err
-    }
-  }
+async function actionSecret (accessToken, restCmd, verb, options, secret) {
+  await githubRequest(accessToken, restCmd, options)
+  console.log(`${verb} secret ${secret}`)
 }
 
 function getStream (filename) {
   return filename ? fs.createReadStream(filename) : process.stdin
 }
 
+async function checkSecretsAccess (accessToken, owner, repository) {
+  const path = getSecretsPath(owner, repository)
+  try {
+    await githubRequest(accessToken, `HEAD ${path}`)
+  } catch (err) {
+    if (err.status) {
+      switch (err.status) {
+        case 404:
+          throw Error(`repository ${path} - not found.`)
+        case 401:
+          throw Error(`repository ${path} - permission denied.`)
+        default:
+          throw err
+      }
+    }
+  }
+}
+
+function emptyLineFilter (line) {
+  const { name } = JSON.parse(line)
+  return name && name.length > 0
+}
+
 async function putSecrets (accessToken, filename, owner, repository, separator) {
   await checkSecretsSupported(accessToken, owner, repository)
+  await checkSecretsAccess(accessToken, owner, repository)
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
 
-  const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
-  const restCmd = `PUT ${path}/{secret_name}`
+  const path = getSecretsPath(owner, repository)
   const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
   const stream = getStream(filename)
   const secretParser = line => {
@@ -135,41 +150,46 @@ async function putSecrets (accessToken, filename, owner, repository, separator) 
     // is used in the split. For example:
     // 'foo=bar=boo=hoo' => [ 'foo', 'bar=boo=hoo' ] when separator is =
     const regex = RegExp(`^([^${separator}]+)${separator}(.+)`)
-    const [, key, value] = line.split(regex)
-    return JSON.stringify({ key, value })
+    const [, name, value] = line.split(regex)
+    return JSON.stringify({ name, value })
   }
   const secretPutter = async l => {
-    const { key, value } = JSON.parse(l)
+    const { name, value } = JSON.parse(l)
+    const secret = `${path}/${name}`
+    const restCmd = `PUT ${secret}`
     const options = {
-      secret_name: key,
       encrypted_value: encrypt(publicKey, value),
       key_id: publicKeyId,
-      ...pathParameters,
       ...additionalOptions
     }
-    await actionSecret(accessToken, restCmd, 'added', options)
+    await actionSecret(accessToken, restCmd, 'added', options, secret)
   }
-  runPipeline(stream, secretParser, secretPutter)
+  runPipeline(stream, secretParser, emptyLineFilter, secretPutter)
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
   await checkSecretsSupported(accessToken, owner, repository)
+  await checkSecretsAccess(accessToken, owner, repository)
 
-  const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
-  const restCmd = `DELETE ${path}/{secret_name}`
-  const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
+  const path = getSecretsPath(owner, repository)
+  const options = getAdditionalOptions(owner, repository, 'DELETE')
   const stream = getStream(filename)
-  const secretParser = l => {
-    return JSON.stringify({ key: l })
+  const secretParser = line => {
+    return JSON.stringify({ name: line })
   }
   const secretDeleter = async l => {
-    const { key } = JSON.parse(l)
-    const options = {
-      secret_name: key,
-      ...pathParameters,
-      ...additionalOptions
+    const { name } = JSON.parse(l)
+    const secret = `${path}/${name}`
+    const restCmd = `DELETE ${secret}`
+    try {
+      await actionSecret(accessToken, restCmd, 'deleted', options, secret)
+    } catch (err) {
+      if (err.status && err.status === 404) {
+        console.log(`secret ${path}/${name} not found`)
+      } else {
+        throw err
+      }
     }
-    await actionSecret(accessToken, restCmd, 'deleted', options)
   }
-  runPipeline(stream, secretParser, secretDeleter)
+  runPipeline(stream, secretParser, emptyLineFilter, secretDeleter)
 }
