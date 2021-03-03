@@ -24,9 +24,9 @@ function filterData (inclusionFilter) {
 
 function writeData (process) {
   return Writable({
-    write (chunk, encoding, next) {
+    async write (chunk, encoding, next) {
       try {
-        process(chunk)
+        await process(chunk)
         return next()
       } catch (e) {
         return next(e)
