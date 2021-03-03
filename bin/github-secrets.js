@@ -141,14 +141,18 @@ async function checkSecretsAccess (accessToken, owner, repository) {
   }
 }
 
+async function validation (accessToken, owner, repository) {
+  await checkSecretsSupported(accessToken, owner, repository)
+  await checkSecretsAccess(accessToken, owner, repository)
+}
+
 function emptyLineFilter (line) {
   const { name } = JSON.parse(line)
   return name && name.length > 0
 }
 
 async function putSecrets (accessToken, filename, owner, repository, separator) {
-  await checkSecretsSupported(accessToken, owner, repository)
-  await checkSecretsAccess(accessToken, owner, repository)
+  await validation(accessToken, owner, repository)
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
 
   const path = getSecretsPath(owner, repository)
@@ -177,8 +181,7 @@ async function putSecrets (accessToken, filename, owner, repository, separator) 
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
-  await checkSecretsSupported(accessToken, owner, repository)
-  await checkSecretsAccess(accessToken, owner, repository)
+  await validation(accessToken, owner, repository)
 
   const path = getSecretsPath(owner, repository)
   const options = getAdditionalOptions(owner, repository, 'DELETE')
