@@ -1,5 +1,6 @@
 # this is a test comment
 boo=hoo
 foo=bar
+abc=123=abc
   # next line is a test empty line
 
