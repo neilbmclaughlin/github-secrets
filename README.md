@@ -1,3 +1,7 @@
+![CI](https://github.com/neilbmclaughlin/github-secrets/actions/workflows/ci.yml/badge.svg)
+![NPM Publish](https://github.com/neilbmclaughlin/github-secrets/actions/workflows/npm-publish.yml/badge.svg)
+[![NPM Version](https://badge.fury.io/js/%40neilbmclaughlin%2Fgithub-secrets.svg)](https://badge.fury.io/js/%40neilbmclaughlin%2Fgithub-secrets)
+
 # Github Secrets
 
 A CLI utility to populate github secrets from a line based text file or stream 
