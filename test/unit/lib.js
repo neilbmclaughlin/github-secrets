@@ -6,11 +6,11 @@ const expect = chai.expect
 describe('getSecretsPath', () => {
   it('should return path template and populated object for org and repo', () => {
     const path = getSecretsPath('bob', 'repo1')
-    expect(path).to.be.eql({ path: '/repos/{owner}/{repository}/actions/secrets', parameters: { owner: 'bob', repository: 'repo1' } })
+    expect(path).to.be.eql('/repos/bob/repo1/actions/secrets')
   })
   it('should return path template and populated object for org only', () => {
     const path = getSecretsPath('bob')
-    expect(path).to.be.eql({ path: '/orgs/{owner}/actions/secrets', parameters: { owner: 'bob' } })
+    expect(path).to.be.eql('/orgs/bob/actions/secrets')
   })
 })
 describe('getSecretsPath', () => {
