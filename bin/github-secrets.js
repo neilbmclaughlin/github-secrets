@@ -1,12 +1,11 @@
-#!/usr/bin/env node
-
 const fs = require('fs')
 const chalk = require('chalk')
-const readline = require('readline')
 const sodium = require('tweetsodium')
 const { Octokit } = require('@octokit/core')
 const yargs = require('yargs/yargs')(process.argv.slice(2))
 const { getSecretsPath, getAdditionalOptions } = require('./lib/secrets')
+const runPipeline = require('./lib/pipeline')
+
 const builder = {
   a: {
     demandOption: true,
@@ -15,10 +14,9 @@ const builder = {
     describe: 'Github personal access token'
   },
   o: {
-    demandOption: true,
     alias: 'owner',
     nargs: 1,
-    describe: 'Github repository owner'
+    describe: 'Github repository owner (defaults to access token owner)'
   },
   r: {
     alias: 'repository',
@@ -26,33 +24,46 @@ const builder = {
     describe: 'Github repository'
   }
 }
-const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)\n2: Expected format for each input line is {key}={value}'
+const envVarMsg = 'Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
 
+const putBuilder = {
+  s: {
+    alias: 'separator',
+    nargs: 1,
+    describe: 'key-value pair separator',
+    default: ' '
+  },
+  ...builder
+}
 // eslint-disable-next-line no-unused-expressions
 yargs
-  .usage('$0 <cmd> [args]')
+  .usage('$0 <cmd> [options]')
   .command(
     'put [filename]',
-    `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
-    builder,
-    (argv) => {
-      putSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log(chalk.green('put complete')))
-        .catch((err) => console.log(`${chalk.red('put failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
+    'upsert repository secrets from either a file or stdin',
+    putBuilder,
+    async (argv) => {
+      putSecrets(argv.accessToken, argv.filename, argv.owner, argv.repository, argv.separator)
+        .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
   .command(
     'delete [filename]',
-    `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
+    'delete repository secrets from either a file or stdin',
     builder,
-    (argv) => {
-      deleteSecrets(argv.a, argv.filename, argv.o, argv.r)
-        .then(() => console.log(chalk.green('delete complete')))
-        .catch((err) => console.log(`${chalk.red('delete failed')} (${chalk.grey(err.extended ? err.extended.message : err)})`))
+    async (argv) => {
+      deleteSecrets(argv.accessToken, argv.filename, argv.owner, argv.repository)
+        .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
+  .epilog(envVarMsg)
   .env('GITHUB_SECRETS')
   .argv
+
+async function getAccessTokenUser (accessToken) {
+  const { data } = await githubRequest(accessToken, 'GET /user')
+  return data.login
+}
 
 function encrypt (publicKey, value) {
   // Convert the message and key to Uint8Array's (Buffer implements that interface)
@@ -68,10 +79,9 @@ function encrypt (publicKey, value) {
   return encrypted
 }
 
-async function githubRequest (accessToken, restCmd, options) {
+async function githubRequest (accessToken, restCmd, options = {}) {
   const octokit = new Octokit({ auth: accessToken })
   try {
-    // console.log({ restCmd, options })
     return await octokit.request(restCmd, options)
   } catch (err) {
     err.extended = {
@@ -82,84 +92,111 @@ async function githubRequest (accessToken, restCmd, options) {
 }
 
 async function getPublicKey (accessToken, owner, repository) {
-  const { path, parameters } = getSecretsPath(owner, repository)
+  const path = getSecretsPath(owner, repository)
   const restCmd = `GET ${path}/public-key`
-  const response = await githubRequest(accessToken, restCmd, parameters)
+  const response = await githubRequest(accessToken, restCmd)
   return { publicKey: response.data.key, publicKeyId: response.data.key_id }
 }
 
 async function checkSecretsSupported (accessToken, owner, repository) {
   if (!repository) {
-    const { data: { type } } = await githubRequest(accessToken, '/users/{owner}', { owner })
+    const { data: { type } } = await githubRequest(accessToken, `/users/${owner}`)
     if (type === 'User') {
       throw Error(`${owner} is a user and a repository has not been specified. Secrets can only be stored for repositorys and organisations.`)
     }
   }
 }
 
-async function actionSecret (accessToken, restCmd, verb, options, key) {
-  try {
-    await githubRequest(accessToken, restCmd, options)
-    console.log(`${verb} secret ${key}`)
-  } catch (err) {
-    if (err.status && err.status === 404) {
-      console.log(`secret ${key} does not exist`)
-    } else {
-      throw err
-    }
-  }
+async function actionSecret (accessToken, restCmd, verb, options, secret) {
+  await githubRequest(accessToken, restCmd, options)
+  console.log(`${verb} secret ${secret}`)
 }
 
 function getStream (filename) {
-  const stream = filename ? fs.createReadStream(filename) : process.stdin
-  // Note: we use the crlfDelay option to recognize all instances of CR LF
-  // ('\r\n') in input.txt as a single line break.
-  const rl = readline.createInterface({
-    input: stream,
-    crlfDelay: Infinity
-  })
-  return rl
+  return filename ? fs.createReadStream(filename) : process.stdin
 }
 
-async function putSecrets (accessToken, filename, owner, repository) {
-  await checkSecretsSupported(accessToken, owner, repository)
-
-  const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
-  const stream = getStream(filename)
-  const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
-  const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
-  for await (const line of stream) {
-    if (line.length > 0 && !line.match(/^[\s]*#/)) {
-      const [key, value] = line.split('=')
-      const restCmd = `PUT ${path}/{secret_name}`
-      const options = {
-        secret_name: key,
-        encrypted_value: encrypt(publicKey, value),
-        key_id: publicKeyId,
-        ...pathParameters,
-        ...additionalOptions
+async function checkSecretsAccess (accessToken, owner, repository) {
+  const path = getSecretsPath(owner, repository)
+  try {
+    await githubRequest(accessToken, `HEAD ${path}`)
+  } catch (err) {
+    if (err.status) {
+      switch (err.status) {
+        case 404:
+          throw Error(`repository ${path} - not found.`)
+        case 401:
+          throw Error(`repository ${path} - permission denied.`)
+        default:
+          throw err
       }
-      await actionSecret(accessToken, restCmd, 'added', options, key)
     }
   }
+}
+
+async function validation (accessToken, owner, repository) {
+  await checkSecretsSupported(accessToken, owner, repository)
+  await checkSecretsAccess(accessToken, owner, repository)
+}
+
+function emptyLineFilter (line) {
+  const { name } = JSON.parse(line)
+  return name && name.length > 0
+}
+
+async function putSecrets (accessToken, filename, owner, repository, separator) {
+  owner = owner || await getAccessTokenUser(accessToken)
+  await validation(accessToken, owner, repository)
+  const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
+
+  const path = getSecretsPath(owner, repository)
+  const additionalOptions = getAdditionalOptions(owner, repository, 'PUT')
+  const stream = getStream(filename)
+  const secretParser = line => {
+    // use regex to ensure only the first occurence of the separator
+    // is used in the split. For example:
+    // 'foo=bar=boo=hoo' => [ 'foo', 'bar=boo=hoo' ] when separator is =
+    const regex = RegExp(`^([^${separator}]+)${separator}(.+)`)
+    const [, name, value] = line.split(regex)
+    return JSON.stringify({ name, value })
+  }
+  const secretPutter = async l => {
+    const { name, value } = JSON.parse(l)
+    const fullname = `${path}/${name}`
+    const restCmd = `PUT ${fullname}`
+    const options = {
+      encrypted_value: encrypt(publicKey, value),
+      key_id: publicKeyId,
+      ...additionalOptions
+    }
+    await actionSecret(accessToken, restCmd, 'added', options, fullname)
+  }
+  runPipeline(stream, secretParser, emptyLineFilter, secretPutter)
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
-  await checkSecretsSupported(accessToken, owner, repository)
+  owner = owner || await getAccessTokenUser(accessToken)
+  await validation(accessToken, owner, repository)
 
+  const path = getSecretsPath(owner, repository)
+  const options = getAdditionalOptions(owner, repository, 'DELETE')
   const stream = getStream(filename)
-  const { path, parameters: pathParameters } = getSecretsPath(owner, repository)
-  const additionalOptions = getAdditionalOptions(owner, repository, 'DELETE')
-  const restCmd = `DELETE ${path}/{secret_name}`
-  for await (const line of stream) {
-    if (line.length > 0 && !line.match(/^[\s]*#/)) {
-      const [key] = line.split('=')
-      const options = {
-        secret_name: key,
-        ...pathParameters,
-        ...additionalOptions
+  const secretParser = line => {
+    return JSON.stringify({ name: line })
+  }
+  const secretDeleter = async l => {
+    const { name } = JSON.parse(l)
+    const fullname = `${path}/${name}`
+    const restCmd = `DELETE ${fullname}`
+    try {
+      await actionSecret(accessToken, restCmd, 'deleted', options, fullname)
+    } catch (err) {
+      if (err.status && err.status === 404) {
+        console.log(`secret ${fullname} not found`)
+      } else {
+        throw err
       }
-      await actionSecret(accessToken, restCmd, 'deleted', options, key)
     }
   }
+  runPipeline(stream, secretParser, emptyLineFilter, secretDeleter)
 }

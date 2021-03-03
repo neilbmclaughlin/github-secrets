@@ -1,17 +1,20 @@
 {
   "name": "@neilbmclaughlin/github-secrets",
-  "version": "1.1.5",
+  "version": "2.0.0",
   "description": "manage git repository secrets",
   "scripts": {
     "lint": "standard",
     "test": "mocha test/unit"
+  },
+  "engines": {
+    "node": ">=10"
   },
   "author": "Neil McLaughlin",
   "license": "MIT",
   "dependencies": {
     "@octokit/core": "^3.2.4",
     "chalk": "^4.1.0",
-    "readline": "^1.3.0",
+    "split": "^1.0.1",
     "tweetsodium": "0.0.5",
     "yargs": "^16.2.0"
   },
