@@ -1,7 +1,3 @@
-// From: https://github.com/manisuec/study/tree/master/streams
-
-// const fs = require('fs')
-// const path = require('path')
 const chalk = require('chalk')
 const split = require('split')
 const { Writable, Transform, pipeline } = require('stream')
@@ -42,11 +38,6 @@ function reporter (err) {
     console.log(chalk.green('success'))
   }
 }
-
-// const READ_FILE_PATH = 'test/data/env'
-
-// const readStream = fs.createReadStream(path.resolve(READ_FILE_PATH))
-// const writeStream = process.stdout // Note: this needs to be a write to github secrets
 
 function doPipeline (readStream, parser, filter, writer) {
   pipeline(
