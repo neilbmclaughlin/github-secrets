@@ -45,8 +45,7 @@ yargs
     'upsert repository secrets from either a file or stdin',
     putBuilder,
     async (argv) => {
-      const owner = await getOwner(argv.a, argv.o)
-      putSecrets(argv.a, argv.filename, owner, argv.r, argv.s)
+      putSecrets(argv.accessToken, argv.filename, argv.owner, argv.repository, argv.separator)
         .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
@@ -55,8 +54,7 @@ yargs
     'delete repository secrets from either a file or stdin',
     builder,
     async (argv) => {
-      const owner = await getOwner(argv.a, argv.o)
-      deleteSecrets(argv.a, argv.filename, owner, argv.r)
+      deleteSecrets(argv.accessToken, argv.filename, argv.owner, argv.repository)
         .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
@@ -64,10 +62,7 @@ yargs
   .env('GITHUB_SECRETS')
   .argv
 
-async function getOwner (accessToken, owner) {
-  if (owner) {
-    return owner
-  }
+async function getAccessTokenUser (accessToken) {
   const { data } = await githubRequest(accessToken, 'GET /user')
   return data.login
 }
@@ -86,7 +81,7 @@ function encrypt (publicKey, value) {
   return encrypted
 }
 
-async function githubRequest (accessToken, restCmd, options) {
+async function githubRequest (accessToken, restCmd, options = {}) {
   const octokit = new Octokit({ auth: accessToken })
   try {
     return await octokit.request(restCmd, options)
@@ -152,6 +147,7 @@ function emptyLineFilter (line) {
 }
 
 async function putSecrets (accessToken, filename, owner, repository, separator) {
+  owner = owner || await getAccessTokenUser(accessToken)
   await validation(accessToken, owner, repository)
   const { publicKey, publicKeyId } = await getPublicKey(accessToken, owner, repository)
 
@@ -181,6 +177,7 @@ async function putSecrets (accessToken, filename, owner, repository, separator) 
 }
 
 async function deleteSecrets (accessToken, filename, owner, repository) {
+  owner = owner || await getAccessTokenUser(accessToken)
   await validation(accessToken, owner, repository)
 
   const path = getSecretsPath(owner, repository)
