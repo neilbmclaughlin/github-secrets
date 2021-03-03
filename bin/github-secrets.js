@@ -88,7 +88,6 @@ function encrypt (publicKey, value) {
 async function githubRequest (accessToken, restCmd, options) {
   const octokit = new Octokit({ auth: accessToken })
   try {
-    // console.log({ restCmd, options })
     return await octokit.request(restCmd, options)
   } catch (err) {
     err.extended = {

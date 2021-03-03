@@ -42,7 +42,7 @@ function reporter (err) {
 function doPipeline (readStream, parser, filter, writer) {
   pipeline(
     readStream,
-    split(parser),
+    split(parser, null, { trailing: false }),
     filterData(filter),
     writeData(writer),
     reporter
