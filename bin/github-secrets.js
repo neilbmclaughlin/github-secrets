@@ -18,7 +18,7 @@ const builder = {
   o: {
     alias: 'owner',
     nargs: 1,
-    describe: 'Github repository owner (defaults to access token user)'
+    describe: 'Github repository owner (defaults to access token owner)'
   },
   r: {
     alias: 'repository',
@@ -26,7 +26,7 @@ const builder = {
     describe: 'Github repository'
   }
 }
-const envVarMsg = 'Notes:\n1: Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
+const envVarMsg = 'Options can also be specified in env vars prepended with \'GITHUB_SECRETS\' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)'
 
 const putBuilder = {
   s: {
@@ -39,10 +39,10 @@ const putBuilder = {
 }
 // eslint-disable-next-line no-unused-expressions
 yargs
-  .usage('$0 <cmd> [args]')
+  .usage('$0 <cmd> [options]')
   .command(
     'put [filename]',
-    `upsert repository secrets from either a file or stdin\n\n${envVarMsg}`,
+    'upsert repository secrets from either a file or stdin',
     putBuilder,
     async (argv) => {
       const owner = await getOwner(argv.a, argv.o)
@@ -52,7 +52,7 @@ yargs
   )
   .command(
     'delete [filename]',
-    `delete repository secrets from either a file or stdin\n\n${envVarMsg}`,
+    'delete repository secrets from either a file or stdin',
     builder,
     async (argv) => {
       const owner = await getOwner(argv.a, argv.o)
@@ -60,6 +60,7 @@ yargs
         .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
+  .epilog(envVarMsg)
   .env('GITHUB_SECRETS')
   .argv
 

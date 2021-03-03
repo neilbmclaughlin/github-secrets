@@ -7,41 +7,53 @@ See examples below on how to do this in a unix environment
 
 ## Usage
 
+```
+❯ github-secrets --help
+github-secrets.js <cmd> [options]
+
+Commands:
+  github-secrets put [filename]     upsert repository secrets from either a
+                                       file or stdin
+  github-secrets delete [filename]  delete repository secrets from either a
+                                       file or stdin
+
+Options:
+  --help     Show help                                                 [boolean]
+  --version  Show version number                                       [boolean]
+
+Options can also be specified in env vars prepended with 'GITHUB_SECRETS' (e.g.
+GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
+
+```
 ### Put Secrets
 ```
+❯ github-secrets put --help
 github-secrets put [filename]
 
 upsert repository secrets from either a file or stdin
-
-Notes:
-1: Options can also be specified in env vars prepended with 'GITHUB_SECRETS'
-(e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
 
 Options:
       --help          Show help                                        [boolean]
       --version       Show version number                              [boolean]
   -s, --separator     key-value pair separator                    [default: " "]
   -a, --access-token  Github personal access token                    [required]
-  -o, --owner         Github repository owner                         [required]
+  -o, --owner         Github repository owner (defaults to access token owner)
   -r, --repository    Github repository
-
+❯
 ```
 
 ### Delete Secrets
 ```
+❯ github-secrets delete --help
 github-secrets delete [filename]
 
 delete repository secrets from either a file or stdin
-
-Notes:
-1: Options can also be specified in env vars prepended with 'GITHUB_SECRETS'
-(e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
 
 Options:
       --help          Show help                                        [boolean]
       --version       Show version number                              [boolean]
   -a, --access-token  Github personal access token                    [required]
-  -o, --owner         Github repository owner                         [required]
+  -o, --owner         Github repository owner (defaults to access token owner)
   -r, --repository    Github repository
 ```
 
