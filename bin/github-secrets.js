@@ -59,17 +59,18 @@ yargs
     }
   )
   .example([
-    ['1) Put secrets from a file of space separated name-value pairs:'],
-    ['$0 put -a {token} -o {owner} -r {repo} test/data/env2'],
-    ['2) Put secrets from an .env format file:'],
-    ['$0 put -a {token} -o {owner} -r {repo} -s= test/data/env'],
-    ['3) Delete secrets from a file:'],
-    ['cut -f1 -d\' \' test/data/env2 | $0 delete -a {token} -o {owner} -r {repo}'],
-    ['4) Put secrets from a URL (which should not be public!):'],
-    ['curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env2 | github-secrets put -a {token} -o {owner} -r {repo}']
+    [chalk.bold('Put secrets from a file of space separated name-value pairs:')],
+    [chalk.dim('$0 put -a {token} -o {owner} -r {repo} test/data/env2')],
+    [chalk.bold('Put secrets from an .env format file with comments filtered out:')],
+    [chalk.dim('egrep -v \'^[ ]*#\' test/data/env | github-secrets put -a {token} -o {owner} -r {repo} -s= test/data/env')],
+    [chalk.bold('Delete secrets from a file:')],
+    [chalk.dim('cut -f1 -d\' \' test/data/env2 | $0 delete -a {access} -o {owner} -r {repo}')],
+    [chalk.bold('Put secrets from a URL (which should not be public!):')],
+    [chalk.dim('curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env2 | github-secrets put -a {token} -o {owner} -r {repo}')]
   ])
   .epilog(envVarMsg)
   .env('GITHUB_SECRETS')
+  .wrap(yargs.terminalWidth())
   .argv
 
 async function getAccessTokenUser (accessToken) {

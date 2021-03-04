@@ -20,17 +20,24 @@ See examples below on how to do this in a unix environment
 github-secrets <cmd> [options]
 
 Commands:
-  github-secrets put [filename]     upsert repository secrets from either a
-                                       file or stdin
-  github-secrets delete [filename]  delete repository secrets from either a
-                                       file or stdin
+  github-secrets put [filename]     upsert repository secrets from either a file or stdin
+  github-secrets delete [filename]  delete repository secrets from either a file or stdin
 
 Options:
-  --help     Show help                                                 [boolean]
-  --version  Show version number                                       [boolean]
+  --help     Show help            [boolean]
+  --version  Show version number  [boolean]
 
-Options can also be specified in env vars prepended with 'GITHUB_SECRETS' (e.g.
-GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
+Examples:
+  Put secrets from a file of space separated name-value pairs:
+  github-secrets put -a {token} -o {owner} -r {repo} test/data/env2
+  Put secrets from an .env format file with comments filtered out:
+  egrep -v '^[ ]*#' test/data/env | github-secrets put -a {token} -o {owner} -r {repo} -s= test/data/env
+  Delete secrets from a file:
+  cut -f1 -d' ' test/data/env2 | github-secrets delete -a {access} -o {owner} -r {repo}
+  Put secrets from a URL (which should not be public!):
+  curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env2 | github-secrets put -a {token} -o {owner} -r {repo}
+
+Options can also be specified in env vars prepended with 'GITHUB_SECRETS' (e.g. GITHUB_SECRETS_ACCESS_TOKEN, GITHUB_SECRETS_OWNER)
 
 ```
 ### Put Secrets
@@ -64,21 +71,3 @@ Options:
   -o, --owner         Github repository owner (defaults to access token owner)
   -r, --repository    Github repository
 ```
-
-## Examples
-
-Put secrets from a file of space separated name-value pairs:
-
-`github-secrets put -a {token} -o {owner} -r {repo} test/data/env2`
-
-Put secrets from an .env format file:
-
-`github-secrets put -a {token} -o {owner} -r {repo} -s= test/data/env`
-
-Delete secrets from a file:
-
-`cut -f1 -d' ' test/data/env2 | github-secrets delete -a {token} -o {owner} -r {repo}`
-
-Put secrets from a URL (which should not be public!):
-
-`curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env2 | github-secrets put -a {token} -o {owner} -r {repo}`
