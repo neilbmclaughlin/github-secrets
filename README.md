@@ -30,6 +30,8 @@ Options:
 Examples:
   Put secrets from a file of space separated name-value pairs:
   github-secrets put -a {token} -o {owner} -r {repo} test/data/env2
+  Put a single secret:
+  echo "foo bar" | github-secrets put -a {token} -o {owner} -r {repo}
   Put secrets from an .env format file with comments filtered out:
   egrep -v '^[ ]*#' test/data/env | github-secrets put -a {token} -o {owner} -r {repo} -s= test/data/env
   Delete secrets from a file:

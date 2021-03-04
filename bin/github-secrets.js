@@ -61,6 +61,8 @@ yargs
   .example([
     [chalk.bold('Put secrets from a file of space separated name-value pairs:')],
     [chalk.dim('$0 put -a {token} -o {owner} -r {repo} test/data/env2')],
+    [chalk.bold('Put a single secret:')],
+    [chalk.dim('echo "foo bar" | $0 put -a {token} -o {owner} -r {repo}')],
     [chalk.bold('Put secrets from an .env format file with comments filtered out:')],
     [chalk.dim('egrep -v \'^[ ]*#\' test/data/env | github-secrets put -a {token} -o {owner} -r {repo} -s= test/data/env')],
     [chalk.bold('Delete secrets from a file:')],
