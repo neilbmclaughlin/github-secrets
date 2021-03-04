@@ -67,28 +67,18 @@ Options:
 
 ## Examples
 
-Putting from a file of key value pairs separated by ' ':
-```
-github-secrets put -a {access-token} -o {org|user} -r {repo} test/data/env2
-```
+Put secrets from a file of space separated name-value pairs:
 
-Putting from an .env format file with comments filtered out:
-```
-egrep -v '^[ ]*#' test/data/env | \
-github-secrets put -a {access-token} -o {org|user} -r {repo} -s '='
-```
+`github-secrets put -a {token} -o {owner} -r {repo} test/data/env2`
 
-Putting an .env format file from a URL with comments filtered out:
-```
-curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env | \
-egrep -v '^[ ]*#' | \
-github-secrets put -a {access-token} -o {org|user} -r {repo} -s '='
-```
+Put secrets from an .env format file:
 
-Deleting from an .env file with comments filtered:
+`github-secrets put -a {token} -o {owner} -r {repo} -s= test/data/env`
 
-```
-egrep -v '^[ ]*#' test/data/env | \
-cut -f1 -d= | \
-github-secrets delete -a {access-token} -o {org|user} -r {repo}
-```
+Delete secrets from a file:
+
+`cut -f1 -d' ' test/data/env2 | github-secrets delete -a {token} -o {owner} -r {repo}`
+
+Put secrets from a URL (which should not be public!):
+
+`curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env2 | github-secrets put -a {token} -o {owner} -r {repo}`
