@@ -6,8 +6,8 @@
 
 A CLI utility to populate github secrets from a line based text file or stream 
 
-***Note***: version 2.0.0 is a breaking change and no longer works by default with .env format files.
-See examples below on how to do this in a unix environment
+***Note***: The [Github CLI](https://cli.github.com/) now supports secret creation and should be used instead.
+
 
 ## Installation
 
