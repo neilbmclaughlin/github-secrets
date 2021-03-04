@@ -9,11 +9,15 @@ A CLI utility to populate github secrets from a line based text file or stream
 ***Note***: version 2.0.0 is a breaking change and no longer works by default with .env format files.
 See examples below on how to do this in a unix environment
 
+## Installation
+
+`npm install -g @neilbmclaughlin/github-secrets`
+
 ## Usage
 
 ```
 ❯ github-secrets --help
-github-secrets.js <cmd> [options]
+github-secrets <cmd> [options]
 
 Commands:
   github-secrets put [filename]     upsert repository secrets from either a
@@ -78,7 +82,6 @@ Putting an .env format file from a URL with comments filtered out:
 ```
 curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env | \
 egrep -v '^[ ]*#' | \
-sed 's/=/ /' | \
 github-secrets put -a {access-token} -o {org|user} -r {repo} -s '='
 ```
 
