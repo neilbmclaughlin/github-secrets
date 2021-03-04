@@ -58,6 +58,12 @@ yargs
         .catch((err) => { console.log(`${chalk.red('fail')} (${chalk.grey(err.extended ? err.extended.message : err)})`) })
     }
   )
+  .example([
+    ['1) $0 put -a {access-token} -o {org|user} -r {repo} test/data/env2', 'Put secrets from a file of space separated name-value pairs'],
+    ['2) $0 put -a {access-token} -o {org|user} -r {repo} -s= test/data/env', 'Put secrets from an .env format file'],
+    ['3) cut -f1 -d\' \' test/data/env2 | $0 delete -a {access-token} -o {org|user} -r {repo}', 'Delete secrets from a file'],
+    ['4) curl -s https://raw.githubusercontent.com/neilbmclaughlin/github-secrets/main/test/data/env2 | github-secrets put -a {access-token} -o {org|user} -r {repo}', 'Put secrets from a URL (which should not be public!)']
+  ])
   .epilog(envVarMsg)
   .env('GITHUB_SECRETS')
   .argv
